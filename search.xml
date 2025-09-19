@@ -31,5 +31,16 @@
   
   
     
+    
+    <entry>
+      <title>追番列表</title>
+      <link href="/bangumi/index.html"/>
+      <url>/bangumi/index.html</url>
+      
+        <content type="html"><![CDATA[]]></content>
+      
+    </entry>
+    
+    
   
 </search>
