@@ -1,0 +1,143 @@
+/* 全局一图流样式统一 */
+.top-img {
+  height: 70vh; /* 高度为视窗的70%，可根据需求调整 */
+  background-size: cover; /* 图片自适应填充 */
+  background-position: center center; /* 图片居中 */
+  background-repeat: no-repeat; /* 禁止重复平铺 */
+}
+
+/* 若需要隐藏图片上的标题文字（可选） */
+.page-title-wrap .page-title {
+  display: none; /* 隐藏页面标题 */
+}
+
+/* 暗黑模式下的图片亮度调整（可选） */
+[data-theme="dark"] .top-img {
+  filter: brightness(0.7); /* 暗黑模式下降低亮度 */
+}
+
+/* 全局背景图（图床版） */
+body {
+  background-image: url(https://uy.wzznft.com/i/2025/09/20/w5lepb.jpg);
+  background-size: cover;
+  background-attachment: fixed;
+}
+
+/* 暗黑模式背景图（图床版） */
+[data-theme="dark"] body {
+  background-image: url(https://uy.wzznft.com/i/2025/09/20/w5lepb.jpg);
+}
+
+/* 顶部导航栏默认状态完全透明 */
+#navbar {
+  background-color: rgba(0, 0, 0, 0) !important; /* 完全透明 */
+  background-image: none !important; /* 移除可能的背景图 */
+  box-shadow: none !important; /* 移除阴影（可选） */
+}
+
+/* 滚动时导航栏仍保持透明（默认滚动时会变实） */
+#navbar.scroll {
+  background-color: rgba(0, 0, 0, 0) !important;
+  box-shadow: none !important;
+}
+
+/* 导航栏文字颜色（确保透明背景下可见，根据你的背景调整） */
+#navbar .site-name, 
+#navbar .menus_items .menus_item a {
+  color: #ffffff !important; /* 白色文字，适合深色背景 */
+  /* 若背景是浅色，可改为深色：color: #333333 !important; */
+}
+
+/* 底部页脚完全透明 */
+#footer {
+  background-color: rgba(0, 0, 0, 0) !important; /* 完全透明 */
+  background-image: none !important; /* 移除背景图 */
+  box-shadow: none !important; /* 移除阴影（可选） */
+}
+
+/* 页脚文字颜色（确保与背景对比明显） */
+#footer .footer-wrap,
+#footer .footer-wrap a {
+  color: #ffffff !important; /* 白色文字，根据背景调整 */
+  /* 浅色背景用深色：color: #666666 !important; */
+}
+
+/* 暗黑模式下的导航栏文字 */
+[data-theme="dark"] #navbar .site-name,
+[data-theme="dark"] #navbar .menus_items .menus_item a {
+  color: #e0e0e0 !important; /* 稍亮的灰色，适合暗黑背景 */
+}
+
+/* 暗黑模式下的页脚文字 */
+[data-theme="dark"] #footer .footer-wrap,
+[data-theme="dark"] #footer .footer-wrap a {
+  color: #e0e0e0 !important;
+}
+
+/* 顶部大图遮罩层透明化 */
+.top-img .mask {
+  background-color: transparent !important; /* 完全透明 */
+  background: none !important; /* 移除可能的渐变背景 */
+}
+
+/* 页面标题区域背景透明 */
+.page-title-wrap {
+  background-color: transparent !important;
+  background: none !important;
+}
+
+/* 标题文字颜色（透明背景下需调整，避免与图片融合） */
+.page-title-wrap .page-title {
+  color: #ffffff !important; /* 白色文字，根据图片调整 */
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3); /* 加阴影增强可读性（可选） */
+}
+
+/* 下拉菜单背景透明 */
+#navbar .menus_items .menus_item .menus_item_child {
+  background-color: rgba(255, 255, 255, 0.9) !important; /* 轻微透明（非完全透明） */
+  /* 若要完全透明：background-color: transparent !important; */
+}
+
+/* 主页顶部图完全透明 */
+#page-header,
+#page-header:before {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* 深色主题下同步透明 */
+[data-theme="dark"] #page-header,
+[data-theme="dark"] #page-header:before {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* 侧边栏整体半透明 */
+.sidebar {
+  background-color: transparent !important; /* 侧边栏容器透明（避免遮挡） */
+}
+
+/* 侧边栏内的小工具卡片半透明 */
+.card-widget {
+  background-color: rgba(255, 255, 255, 0.70) !important; /* 与文章区域保持一致的透明度 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+  border-radius: 8px; /* 圆角（可选） */
+}
+
+/* 暗黑模式：侧边栏小工具半透明 */
+[data-theme="dark"] .card-widget {
+  background-color: rgba(30, 30, 30, 0.70) !important;
+}
+
+/* 文章卡片半透明（透明度可按需调整，如 0.5、0.8） */
+.excerpt {
+  background-color: rgba(255, 255, 255, 0.7) !important; /* 白色背景，70% 不透明 */
+  border: 1px solid rgba(255, 255, 255, 0.5) !important; /* 边框半透明 */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important; /* 阴影弱透明 */
+}
+
+/* 深色模式下的适配（可选） */
+[data-theme="dark"] .excerpt {
+  background-color: rgba(30, 30, 30, 0.7) !important; /* 深色背景，70% 不透明 */
+  border-color: rgba(60, 60, 60, 0.5) !important;
+}
