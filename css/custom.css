@@ -18,14 +18,14 @@
 
 /* 全局背景图（图床版） */
 body {
-  background-image: url(https://uy.wzznft.com/i/2025/09/20/w5lepb.jpg);
+  background-image: url(https://cdn4.winhlb.com/2025/09/21/68cfb018a7736.jpg);
   background-size: cover;
   background-attachment: fixed;
 }
 
 /* 暗黑模式背景图（图床版） */
 [data-theme="dark"] body {
-  background-image: url(https://uy.wzznft.com/i/2025/09/20/w5lepb.jpg);
+  background-image: url(https://cdn4.winhlb.com/2025/09/21/68cfb018a7736.jpg);
 }
 
 /* 顶部导航栏默认状态完全透明 */
