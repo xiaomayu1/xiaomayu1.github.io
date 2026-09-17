@@ -15,46 +15,105 @@
 
 ---
 
-## 部署（两步走）
+## 部署方案：Cloudflare + Supabase（全免费）
 
-### 第一步：部署后端（Railway 免费）
+### 第一步：创建 Supabase 项目
 
-1. 打开 [railway.app](https://railway.app) → Sign In with GitHub
-2. 点击 **New Project** → **Deploy from GitHub repo**
-3. 选择本仓库，新建一个 Service，命名为 `ink-pub-backend`
-4. Railway 会自动读取 `backend/render.yaml`，运行 `npm install && npm start`
-5. 部署完成后，复制你的后端 URL（格式：`https://xxx.onrender.com`）
+1. 打开 https://supabase.com → Sign Up / Sign In
+2. 点击 **New Project**，填写名称和数据库密码，选择区域（选 `East US` 或 `West Europe`）
+3. 创建完成后，进入 **SQL Editor**，复制上方 `SUPABASE.sql` 文件内容，粘贴执行
+4. 记录以下信息（Settings → API）：
+   - **Project URL**（类似 `https://xxxxx.supabase.co`）
+   - **API Key** → 选 `service_role`（注意：这是后端密钥，不要泄露到前端）
 
-### 第二步：配置前端 API 地址
+### 第二步：部署前端到 Cloudflare Pages
 
-编辑 `frontend/public/js/app.js` 第 2 行，将空字符串改为你的后端 URL：
+1. 打开 https://dash.cloudflare.com → **Workers & Pages** → **Create application** → **Pages**
+2. 选择 **Connect to Git**，授权 GitHub，选择本仓库 `xiaomayu1/xiaomayu1-xiaomayu1.github.io`
+3. 构建设置：
+   - **Production branch**: `main`
+   - **Build command**: `node cf-pages-build/build.js`
+   - **Build output directory**: `_site`
+   - 其余留空
+4. 点击 **Save and Deploy**
+5. 部署完成后获得地址：`https://墨韵.pages.dev`（或自定义域名）
 
+### 第三步：部署后端到 Cloudflare Workers
+
+1. 安装 Wrangler（全局）：
+   ```bash
+   npm install -g wrangler
+   ```
+2. 登录 Cloudflare：
+   ```bash
+   wrangler login
+   ```
+3. 进入 workers 目录并安装依赖：
+   ```bash
+   cd e:/web/workers
+   npm install
+   ```
+4. 复制 `wrangler.toml` 到 workers 目录（或直接修改根目录的）：
+   ```bash
+   cp wrangler.toml workers/wrangler.toml
+   ```
+5. 设置环境变量（在 Cloudflare Dashboard 操作）：
+   - 进入 **Workers & Pages** → 找到 `ink-pub` 服务 → **Settings** → **Variables**
+   - 添加以下变量：
+     | 变量名 | 值 |
+     |--------|-----|
+     | `SUPABASE_URL` | 你的 Supabase URL（如 `https://xxxxx.supabase.co`）|
+     | `SUPABASE_KEY` | service_role 密钥 |
+     | `JWT_SECRET` | 随机字符串（如用 `openssl rand -hex 32` 生成）|
+6. 部署：
+   ```bash
+   cd e:/web/workers
+   wrangler deploy
+   ```
+7. 部署成功后获得 Worker 地址：`https://墨韵.xiaomayu1.workers.dev`
+
+### 第四步：配置前端连接后端
+
+有两种方式连接前后端：
+
+**方式 A：修改代码（推荐）**
+编辑 `frontend/public/js/app.js` 第 2 行：
 ```js
-const API = 'https://your-backend.onrender.com';
+const API = 'https://墨韵.xiaomayu1.workers.dev';
+```
+然后重新构建并部署 Pages：
+```bash
+node cf-pages-build/build.js
+# 在 Cloudflare Dashboard 重新触发 Pages 部署
 ```
 
-然后 push 到 GitHub，GitHub Pages 会自动部署。
-
-**或者**：不修改代码，直接访问时加上 `?api=` 参数：
+**方式 B：URL 参数（不改代码）**
+访问时加 `?api=` 参数：
 ```
-https://xiaomayu1.github.io/xiaomayu1-xiaomayu1.github.io/?api=https://your-backend.onrender.com
+https://墨韵.pages.dev/?api=https://墨韵.xiaomayu1.workers.dev
 ```
-
-### GitHub Pages 设置
-
-1. 打开 [GitHub Settings → Pages](https://github.com/xiaomayu1/xiaomayu1-xiaomayu1.github.io/settings/pages)
-2. Source 选择 **GitHub Actions**
-3. 稍等几分钟，页面会显示部署地址（通常是 `https://xiaomayu1.github.io/xiaomayu1-xiaomayu1.github.io/`）
 
 ---
 
 ## 本地运行
 
+### 前端
 ```bash
-cd backend
-npm install
-npm start
-# 浏览器打开 http://localhost:3001
+cd e:/web/frontend/public
+npx serve .
+# 访问 http://localhost:3000
+```
+
+### 后端
+```bash
+cd e:/web/workers
+# 设置环境变量后运行
+wrangler dev
+# 或手动设置：
+export SUPABASE_URL=https://xxx.supabase.co
+export SUPABASE_KEY=your-service-role-key
+export JWT_SECRET=random-secret
+npx wrangler dev
 ```
 
 ---
@@ -78,8 +137,8 @@ npm start
 
 ## 技术栈
 
-- **前端**: 纯 HTML/CSS/JavaScript（无框架）
-- **后端**: Node.js + Express
-- **认证**: bcryptjs + jsonwebtoken
-- **部署**: GitHub Pages（前端）+ Railway（后端）
-- **字体**: Noto Serif SC / Noto Sans SC（Google Fonts）
+- **前端**：纯 HTML/CSS/JavaScript
+- **后端**：Cloudflare Workers + Node.js 兼容层
+- **数据库**：Supabase（PostgreSQL）
+- **认证**：bcryptjs + jsonwebtoken
+- **部署**：Cloudflare Pages（前端）+ Cloudflare Workers（后端）

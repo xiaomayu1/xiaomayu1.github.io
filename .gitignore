@@ -1,4 +1,6 @@
 node_modules/
 backend/data/
+workers/node_modules/
 .claude/
 *.log
+_site/
