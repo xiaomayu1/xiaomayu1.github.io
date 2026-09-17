@@ -1,0 +1,8 @@
+build.yaml
+name: literary-backend
+región: us-central
+plan: free
+
+build:
+  command: npm install && npm start
+  start: node server.js

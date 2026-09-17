@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>墨韵 · 诗歌社区</title>
+  <meta name="description" content="墨韵 — 每个人的诗歌社区，发表你的诗作，与他人共鸣">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="grain"></div>
+
+  <!-- NAV -->
+  <header class="nav" id="nav">
+    <div class="nav-wrap">
+      <a href="/" class="brand">
+        <span class="brand-mark">墨</span>
+        <span class="brand-name">墨韵</span>
+      </a>
+      <nav class="nav-links">
+        <a href="#home" class="nav-link active">首页</a>
+        <a href="#poems" class="nav-link">诗集</a>
+        <a href="#about" class="nav-link">关于</a>
+      </nav>
+      <div class="nav-actions" id="navActions">
+        <button class="icon-btn" id="themeBtn" aria-label="切换主题">
+          <span class="icon-sun">☀</span>
+          <span class="icon-moon">☽</span>
+        </button>
+        <div class="auth-buttons" id="authButtons">
+          <button class="btn-login" id="loginBtn">登录</button>
+          <button class="btn-register" id="registerBtn">注册</button>
+        </div>
+        <div class="user-menu" id="userMenu" style="display:none">
+          <button class="btn-write" id="writeBtn"><span>写</span></button>
+          <div class="user-avatar" id="userAvatar" title="点击退出"></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero" id="home">
+    <div class="hero-deco">
+      <span class="deco-char c1">诗</span>
+      <span class="deco-char c2">心</span>
+      <span class="deco-char c3">墨</span>
+    </div>
+    <div class="hero-content">
+      <p class="hero-label">诗歌社区</p>
+      <h1 class="hero-title">用文字<br>留住瞬间</h1>
+      <p class="hero-desc">每一个灵魂的吟唱都值得被听见。<br>注册账号，发表你的诗歌，与他人产生共鸣。</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" id="heroWrite">开始写作</button>
+        <a href="#poems" class="btn btn-ghost">浏览诗集</a>
+      </div>
+      <div class="hero-stats" id="heroStats">
+        <div class="h-stat"><span class="h-num" data-target="stats.total">0</span><span class="h-lbl">首诗</span></div>
+        <div class="h-div"></div>
+        <div class="h-stat"><span class="h-num" data-target="stats.totalLikes">0</span><span class="h-lbl">次共鸣</span></div>
+        <div class="h-div"></div>
+        <div class="h-stat"><span class="h-num" data-target="stats.totalViews">0</span><span class="h-lbl">次阅读</span></div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="quote-card">
+        <div class="qc-line"></div>
+        <p class="qc-text">以文字为舟，渡内心之海。</p>
+        <div class="qc-footer">— 墨韵社区</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- POEMS SECTION -->
+  <section class="section" id="poems">
+    <div class="section-header">
+      <h2 class="section-title">诗集</h2>
+      <div class="section-controls">
+        <div class="tabs" id="filterTabs">
+          <button class="tab active" data-cat="all">全部</button>
+        </div>
+        <select class="sort-select" id="sortSelect">
+          <option value="newest">最新发布</option>
+          <option value="likes">最多点赞</option>
+          <option value="oldest">最早发布</option>
+        </select>
+        <div class="search-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" placeholder="搜索诗歌..." id="searchInput">
+        </div>
+      </div>
+    </div>
+    <div class="poems-grid" id="poemsGrid">
+      <div class="skeleton-row"></div>
+      <div class="skeleton-row"></div>
+      <div class="skeleton-row"></div>
+      <div class="skeleton-row"></div>
+    </div>
+    <div class="empty-state" id="emptyState" style="display:none">
+      <div class="empty-icon">✦</div>
+      <h3>还没有作品</h3>
+      <p>登录后即可发表你的第一首诗</p>
+    </div>
+    <div class="load-more" id="loadMore" style="display:none">
+      <button class="btn-load" id="loadMoreBtn">加载更多</button>
+    </div>
+  </section>
+
+  <!-- TAGS SECTION -->
+  <section class="section tags-section" id="about">
+    <div class="section-header">
+      <h2 class="section-title">标签</h2>
+    </div>
+    <div class="tags-cloud" id="tagsCloud">
+      <span class="tag-skel"></span><span class="tag-skel"></span>
+      <span class="tag-skel"></span><span class="tag-skel"></span>
+      <span class="tag-skel"></span>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="brand-sm">
+        <span class="brand-mark">墨</span>
+        <span class="brand-name">墨韵</span>
+      </div>
+      <p class="footer-text">以诗会友，以墨传情</p>
+      <p class="footer-copy">&copy; 2026 墨韵</p>
+    </div>
+  </footer>
+
+  <!-- AUTH MODAL -->
+  <div class="modal" id="authModal">
+    <div class="modal-backdrop" id="authBackdrop"></div>
+    <div class="modal-panel auth-panel">
+      <button class="icon-btn modal-close" id="authClose">&times;</button>
+      <div class="auth-body">
+        <div class="auth-form" id="loginForm">
+          <div class="auth-header">
+            <div class="auth-logo">墨</div>
+            <h2 class="auth-title">欢迎回来</h2>
+            <p class="auth-subtitle">登录你的墨韵账号</p>
+          </div>
+          <div class="field">
+            <label>用户名</label>
+            <input type="text" id="loginUsername" placeholder="请输入用户名" autocomplete="username">
+          </div>
+          <div class="field">
+            <label>密码</label>
+            <input type="password" id="loginPassword" placeholder="请输入密码" autocomplete="current-password">
+          </div>
+          <button class="btn-auth btn-auth--primary" id="loginSubmit">登录</button>
+          <p class="auth-switch">还没有账号？<a href="#" id="showRegister">立即注册</a></p>
+        </div>
+        <div class="auth-form hidden" id="registerForm">
+          <div class="auth-header">
+            <div class="auth-logo">墨</div>
+            <h2 class="auth-title">创建账号</h2>
+            <p class="auth-subtitle">加入墨韵诗歌社区</p>
+          </div>
+          <div class="field">
+            <label>显示名称</label>
+            <input type="text" id="regDisplayName" placeholder="你想让别人怎么叫你" maxlength="20">
+          </div>
+          <div class="field">
+            <label>用户名</label>
+            <input type="text" id="regUsername" placeholder="用于登录（2-20个字符）" maxlength="20" autocomplete="username">
+          </div>
+          <div class="field">
+            <label>密码</label>
+            <input type="password" id="regPassword" placeholder="至少3个字符" minlength="3" autocomplete="new-password">
+          </div>
+          <button class="btn-auth btn-auth--primary" id="registerSubmit">注册</button>
+          <p class="auth-switch">已有账号？<a href="#" id="showLogin">立即登录</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WRITER MODAL -->
+  <div class="modal" id="writerModal">
+    <div class="modal-backdrop" id="writerBackdrop"></div>
+    <div class="modal-panel writer-panel">
+      <div class="writer-header">
+        <div class="writer-headline" id="writerHeadline">新诗</div>
+        <button class="icon-btn modal-close" id="writerClose">&times;</button>
+      </div>
+      <div class="writer-body">
+        <div class="field">
+          <label>标题</label>
+          <input type="text" id="fTitle" placeholder="给这首诗起个名字" maxlength="50" autocomplete="off">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>分类</label>
+            <select id="fCategory">
+              <option value="随笔">随笔</option>
+              <option value="现代诗">现代诗</option>
+              <option value="古风">古风</option>
+              <option value="散文诗">散文诗</option>
+              <option value="童诗">童诗</option>
+              <option value="其他">其他</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>集名 <span class="hint">可选</span></label>
+            <input type="text" id="fCollection" placeholder="如：春之声">
+          </div>
+        </div>
+        <div class="field">
+          <label>标签 <span class="hint">逗号分隔</span></label>
+          <input type="text" id="fTags" placeholder="如：春天, 风景, 感悟">
+        </div>
+        <div class="field field--main">
+          <label>正文</label>
+          <textarea id="fContent" placeholder="写下你的诗句..." rows="14" autocomplete="off"></textarea>
+        </div>
+      </div>
+      <div class="writer-footer">
+        <button class="btn-ghost" id="writerCancel">取消</button>
+        <button class="btn-publish" id="writerSubmit">发表</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- READ MODAL -->
+  <div class="modal" id="readModal">
+    <div class="modal-backdrop" id="readBackdrop"></div>
+    <div class="modal-panel read-panel">
+      <button class="icon-btn modal-close" id="readClose">&times;</button>
+      <div class="read-scroll" id="readBody"></div>
+      <div class="read-footer" id="readFooter"></div>
+    </div>
+  </div>
+
+  <!-- CONFIRM DIALOG -->
+  <div class="modal" id="confirmModal">
+    <div class="modal-backdrop" id="confirmBackdrop"></div>
+    <div class="modal-panel confirm-panel">
+      <div class="confirm-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <p class="confirm-text" id="confirmText"></p>
+      <div class="confirm-actions">
+        <button class="btn-confirm-cancel" id="confirmCancel">取消</button>
+        <button class="btn-confirm-ok" id="confirmOk">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast">
+    <span class="toast-dot"></span>
+    <span class="toast-msg"></span>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>
