@@ -4,10 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "d1:create": "wrangler d1 create ink-pub-db",
+    "d1:migrate": "wrangler d1 execute ink-pub-db --file=d1/migrate.sql"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2"
   },

@@ -6,7 +6,10 @@ node_compat = true
 [vars]
 NODE_ENV = "production"
 
-# ── 部署时填入你的 Supabase 配置 ──
-# [[kv_namespaces]]
-# binding = "MY_KV"
-# id = "your-kv-id"
+# ── D1 数据库绑定 ──
+# 部署后在 Cloudflare Dashboard → Workers → ink-pub → Settings → D1 数据库中
+# 绑定 ink-pub-db 到此 Worker
+[d1_databases]
+binding = "DB"
+database_name = "ink-pub-db"
+database_id = "YOUR_D1_DATABASE_ID"

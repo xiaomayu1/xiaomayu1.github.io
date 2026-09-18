@@ -4,3 +4,4 @@ workers/node_modules/
 .claude/
 *.log
 _site/
+wrangler.toml

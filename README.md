@@ -15,83 +15,131 @@
 
 ---
 
-## 部署方案：Cloudflare + Supabase（全免费）
+## 部署方案：Cloudflare（全免费，无第三方数据库）
 
-### 第一步：创建 Supabase 数据库
+### 前置：创建 GitHub 仓库
 
-1. 打开 https://supabase.com → 注册或登录
-2. 点击 **New project**（新建项目）
-   - Project name：填 `ink-pub`（任意名字）
-   - Database password：记牢这个密码
-   - Region：选 **East US**（延迟最低）
-   - 点击 **Create new project**，等 1~2 分钟
-3. 创建完成后，左侧菜单点击 **SQL Editor**
-4. 打开本仓库的 **`SUPABASE.sql`** 文件，全选复制，粘贴到 SQL Editor，点击 **Run**
-5. 记录以下信息（左侧菜单 **Settings** → **API**）：
-   - **Project URL**（类似 `https://xxxxx.supabase.co`）
-   - **api_key**（选 `service_role`，复制这一串）
+1. 打开 https://github.com/new
+2. 仓库名：`xiaomayu1.github.io`（或任意名字）
+3. 公开 → **Create repository**
+4. 把代码推上去：
+   ```bash
+   cd e:/web
+   git remote set-url origin https://github.com/xiaomayu1/xiaomayu1.github.io.git
+   git push -u origin main
+   ```
 
 ---
 
-### 第二步：部署前端 → Cloudflare Pages
+### 第一步：创建 D1 数据库
 
-1. 打开 https://dash.cloudflare.com → 左下角点 **Workers 和 Pages**
-2. 点击顶部 **创建** → **Pages** → **连接到 Git**
-3. 授权 GitHub，选择仓库 **xiaomayu1/xiaomayu1.github.io**
-4. 配置构建设置：
-
-   | 选项 | 填写内容 |
-   |------|---------|
-   | 生产分支 | `main` |
-   | 构建命令 | `node cf-pages-build/build.js` |
-   | 构建输出目录 | `_site` |
-   | 构建缓存关键词 | （留空） |
-
-5. 点击 **保存并部署**
-6. 等待约 30 秒，部署成功后会显示地址，类似：
-   `https://墨韵.pages.dev`
+1. 打开 https://dash.cloudflare.com → 左下角 **Workers 和 Pages**
+2. 左侧菜单点 **D1 数据库** → **创建数据库**
+3. 名称填 `ink-pub-db`，区域选 **East US**，点击 **创建**
+4. 记住数据库 ID（长字符串，如 `xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`）
 
 ---
 
-### 第三步：部署后端 → Cloudflare Workers
+### 第二步：建表并导入数据
 
-1. 回到 **Workers 和 Pages** 页面
-2. 点击顶部 **创建** → **Worker** → **从 Git 创建**
-3. 选择同一个仓库 `xiaomayu1/xiaomayu1.github.io`
-4. 配置构建设置：
+有两种方式：
 
-   | 选项 | 填写内容 |
-   |------|---------|
+**方式 A：用 Wrangler 命令行**
+```bash
+cd e:/web/workers
+npm install
+npx wrangler d1 execute ink-pub-db --file=d1/migrate.sql
+```
+
+**方式 B：用 Cloudflare Dashboard（推荐，不用命令行）**
+1. 进入刚创建的 `ink-pub-db` 数据库
+2. 点 **控制台** 标签页
+3. 依次执行以下 SQL（复制粘贴，每次点 **运行**）：
+
+```sql
+CREATE TABLE users (
+  id TEXT PRIMARY KEY,
+  username TEXT UNIQUE NOT NULL,
+  display_name TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE poems (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  author TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  collection TEXT DEFAULT '',
+  category TEXT DEFAULT '随笔',
+  tags TEXT DEFAULT '[]',
+  likes INTEGER DEFAULT 0,
+  views INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX idx_poems_category ON poems(category);
+CREATE INDEX idx_poems_created_at ON poems(created_at DESC);
+CREATE INDEX idx_poems_likes ON poems(likes DESC);
+CREATE INDEX idx_users_username ON users(username);
+```
+
+然后在**数据**标签页，点 **插入行**，逐条添加示例诗歌（或直接用上面的 migrate.sql 批量导入）。
+
+---
+
+### 第三步：部署后端 Worker
+
+1. 回到 **Workers 和 Pages** → **创建** → **Worker** → **从 Git 创建**
+2. 选择你的 GitHub 仓库
+3. 构建设置：
+
+   | 选项 | 填写 |
+   |------|------|
    | 生产分支 | `main` |
    | 构建命令 | `npm install --prefix workers` |
    | 入口文件 | `workers/index.js` |
-   | 构建输出目录 | （留空） |
 
-5. 点击 **保存并部署**
-6. 部署完成后，进入该 Worker 的 **设置** 页面
-7. 找到 **变量** 部分，点击 **添加变量**，添加以下三个：
+4. 点 **保存并部署**
+5. 部署完成后，进入该 Worker 的 **设置** 页面
+6. 找到 **变量**，添加：
 
    | 变量名 | 值 |
    |--------|-----|
-   | `SUPABASE_URL` | 第一步复制的 Project URL（`https://xxxxx.supabase.co`） |
-   | `SUPABASE_KEY` | 第一步复制的 service_role 密钥 |
-   | `JWT_SECRET` | 随便输一串随机字符，比如 `moyun-secret-2026` |
+   | `JWT_SECRET` | 随机字符串，如 `moyun-2026-abc123` |
 
-8. 点击 **保存**，然后点顶部 **部署** → **重新部署**
+7. 找到 **D1 数据库绑定**，添加：
+   - 变量名：`DB`
+   - 数据库：选 `ink-pub-db`
+   - 环境绑定：生产环境
+8. 点 **保存** → 顶部 **部署** → **重新部署**
 
-9. 部署成功后，在 Worker 详情页顶部会显示域名，类似：
-   `https://墨韵.xiaomayu1.workers.dev`
-   （复制这个地址，后面要用）
+9. 获得 Worker 地址，记录：`https://墨韵.xiaomayu1.workers.dev`
 
 ---
 
-### 第四步：连接前端和后端
+### 第四步：部署前端 Pages
 
-有两种方式，任选一种：
+1. 回到 **Workers 和 Pages** → **创建** → **Pages** → **连接到 Git**
+2. 选择同一个仓库
+3. 构建设置：
 
-**方式 A：改代码（推荐，一劳永逸）**
+   | 选项 | 填写 |
+   |------|------|
+   | 生产分支 | `main` |
+   | 构建命令 | `node cf-pages-build/build.js` |
+   | 构建输出目录 | `_site` |
 
-1. 用任意文本编辑器打开 `frontend/public/js/app.js`
+4. 点 **保存并部署**
+5. 获得 Pages 地址：`https://墨韵.pages.dev`
+
+---
+
+### 第五步：连接前后端
+
+1. 打开本地 `frontend/public/js/app.js`
 2. 找到第 2 行：
    ```js
    const API = '';
@@ -100,46 +148,39 @@
    ```js
    const API = 'https://墨韵.xiaomayu1.workers.dev';
    ```
-4. 保存后，回到 Cloudflare Pages → 你的页面 → **部署** → **触发部署**
-5. 等待 30 秒，刷新页面即可
-
-**方式 B：不改代码，用 URL 参数**
-
-访问时直接在地址后面加 `?api=你的Worker地址`：
-```
-https://墨韵.pages.dev/?api=https://墨韵.xiaomayu1.workers.dev
-```
+4. 保存后推送到 GitHub，Pages 会自动重新部署
 
 ---
 
-### 第五步：测试
+### 测试
 
-1. 打开你的 Pages 地址
-2. 点击右上角 **注册**，创建第一个账号
-3. 登录后点击右上角 **✏ 写**，发表第一首诗
-4. 邀请朋友注册，大家一起写诗！
+1. 访问你的 Pages 地址
+2. 右上角注册账号
+3. 登录后点 **✏ 写** 发表第一首诗
+4. 邀请朋友一起玩！
 
 ---
 
-## 本地运行
+## 本地开发
 
 ### 前端
 ```bash
 cd e:/web/frontend/public
 npx serve .
-# 浏览器打开 http://localhost:3000
+# 访问 http://localhost:3000
 ```
 
-### 后端（Worker 本地调试）
+### 后端（本地调试）
 ```bash
 cd e:/web/workers
 npm install
 
-# 创建 .dev.vars 文件，填入环境变量：
-# SUPABASE_URL=https://xxxxx.supabase.co
-# SUPABASE_KEY=your-service-role-key
-# JWT_SECRET=moyun-secret-2026
+# 创建本地 D1 数据库
+npx wrangler d1 create ink-pub-db-local
+npx wrangler d1 execute ink-pub-db-local --file=d1/migrate.sql
 
+# 修改 wrangler.toml 里的 database_id 为本地 ID
+# 然后运行：
 npx wrangler dev
 # 访问 http://localhost:8787
 ```
@@ -171,9 +212,9 @@ npx wrangler dev
 |----|------|
 | 前端 | 纯 HTML / CSS / JavaScript |
 | 后端 | Cloudflare Workers（Node.js 兼容） |
-| 数据库 | Supabase（PostgreSQL） |
+| 数据库 | Cloudflare D1（SQLite） |
 | 认证 | bcryptjs + jsonwebtoken（JWT） |
-| 部署 | Cloudflare Pages + Cloudflare Workers |
+| 部署 | Cloudflare Pages（前端）+ Cloudflare Workers（后端） |
 | 字体 | Noto Serif SC（Google Fonts） |
 
 ---
@@ -182,18 +223,19 @@ npx wrangler dev
 
 ```
 e:/web/
-├── SUPABASE.sql           ← Supabase 建表 SQL（在 SQL Editor 执行）
+├── SUPABASE.sql           ← 已废弃（改用 D1）
 ├── cf-pages-build/        ← Pages 构建脚本
 │   ├── build.js
 │   └── package.json
-├── frontend/public/       ← 前端代码（由 Pages 托管）
-│   ├── index.html
-│   ├── css/style.css
-│   └── js/app.js
 ├── workers/               ← Cloudflare Workers 后端
 │   ├── index.js           ← Worker 主入口
-│   └── package.json
-├── wrangler.toml          ← Workers 配置
-├── backend/               ← 本地开发用 Express 后端（可忽略）
-└── README.md
+│   ├── package.json
+│   └── d1/
+│       └── migrate.sql    ← D1 建表和初始化 SQL
+├── wrangler.toml          ← Workers 配置模板
+├── backend/               ← 已废弃
+└── frontend/public/       ← 前端代码
+    ├── index.html
+    ├── css/style.css
+    └── js/app.js
 ```
