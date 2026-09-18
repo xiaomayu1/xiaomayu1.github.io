@@ -1,8 +1,4 @@
-// API base: supports ?api= URL param for deployment
-const API = (() => {
-  const params = new URLSearchParams(window.location.search);
-  return params.get('api') || '';
-})();
+const API = '';
 
 /* ===== UTILS ===== */
 function esc(s) {
@@ -50,6 +46,8 @@ class App {
     this.currentPoem = null;
     this.editingId = null;
     this.user = null;
+    this.userProfile = null;
+    this.commentReplies = {};
     this.limit = 12;
     this._confirmResolve = null;
     this.init();
@@ -88,12 +86,19 @@ class App {
       writerCancel: $('writerCancel'), writerSubmit: $('writerSubmit'),
       writerHeadline: $('writerHeadline'),
       fTitle: $('fTitle'), fCategory: $('fCategory'),
-      fCollection: $('fCollection'), fTags: $('fTags'), fContent: $('fContent'),
+      fTags: $('fTags'), fContent: $('fContent'),
       // Reader
       readModal: $('readModal'), readClose: $('readClose'),
       readBody: $('readBody'), readFooter: $('readFooter'),
       likeBtn: $('likeBtn'), likeCount: $('likeCount'),
       editBtn: $('editBtn'), deleteBtn: $('deleteBtn'),
+      // Comments
+      commentsSection: $('commentsSection'), commentsCount: $('commentsCount'),
+      commentInput: $('commentInput'), commentInputWrap: $('commentInputWrap'),
+      commentSend: $('commentSend'), commentsList: $('commentsList'),
+      // Profile
+      profileModal: $('profileModal'), profileClose: $('profileClose'),
+      profileBackdrop: $('profileBackdrop'), profileBody: $('profileBody'),
       // Confirm
       confirmModal: $('confirmModal'), confirmText: $('confirmText'),
       confirmOk: $('confirmOk'), confirmCancel: $('confirmCancel'), confirmBackdrop: $('confirmBackdrop'),
@@ -106,6 +111,7 @@ class App {
     window.addEventListener('scroll', () => this.d.nav.classList.toggle('scrolled', scrollY > 10));
     this.d.themeBtn.addEventListener('click', () => this.toggleTheme());
 
+    // Auth
     this.d.loginBtn.addEventListener('click', () => this.showLogin());
     this.d.registerBtn.addEventListener('click', () => this.showRegister());
     this.d.authClose.addEventListener('click', () => this.closeAuth());
@@ -118,21 +124,32 @@ class App {
       el.addEventListener('keydown', e => { if (e.key === 'Enter') el === this.d.regPassword ? this.handleRegister() : this.handleLogin(); });
     });
 
+    // User avatar → own profile
     this.d.userAvatar.addEventListener('click', () => {
-      this.showConfirm('确定要退出登录吗？').then(ok => { if (ok) logout(); });
+      if (this.user) this.openProfile(this.user.username);
     });
 
+    // Write
     this.d.heroWrite.addEventListener('click', () => this.requireAuth(() => this.openWriter()));
     this.d.writeBtn.addEventListener('click', () => this.requireAuth(() => this.openWriter()));
 
+    // Writer modal
     this.d.writerClose.addEventListener('click', () => this.closeWriter());
     this.d.writerCancel.addEventListener('click', () => this.closeWriter());
     this.d.writerModal.querySelector('.modal-backdrop').addEventListener('click', () => this.closeWriter());
     this.d.writerSubmit.addEventListener('click', () => this.handleSubmit());
 
+    // Read modal
     this.d.readClose.addEventListener('click', () => this.closeReader());
     this.d.readModal.querySelector('.modal-backdrop').addEventListener('click', () => this.closeReader());
 
+    // Comments
+    this.d.commentSend.addEventListener('click', () => this.submitComment());
+    this.d.commentInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) this.submitComment();
+    });
+
+    // Filters
     this.d.tabs.forEach(tab => tab.addEventListener('click', () => {
       this.d.tabs.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
@@ -147,6 +164,7 @@ class App {
     });
     this.d.loadMoreBtn.addEventListener('click', () => { this.limit += 8; this.renderPoems(); });
 
+    // Confirm
     this.d.confirmOk.addEventListener('click', () => {
       const resolve = this._confirmResolve;
       this.hideConfirm();
@@ -155,8 +173,12 @@ class App {
     this.d.confirmCancel.addEventListener('click', () => this.hideConfirm());
     this.d.confirmBackdrop.addEventListener('click', () => this.hideConfirm());
 
+    // Profile
+    this.d.profileClose.addEventListener('click', () => this.closeProfile());
+    this.d.profileBackdrop.addEventListener('click', () => this.closeProfile());
+
     document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') { this.closeReader(); this.closeWriter(); this.closeAuth(); this.hideConfirm(); }
+      if (e.key === 'Escape') { this.closeReader(); this.closeWriter(); this.closeAuth(); this.hideConfirm(); this.closeProfile(); }
     });
   }
 
@@ -174,9 +196,9 @@ class App {
     this.d.authButtons.style.display = loggedIn ? 'none' : 'flex';
     this.d.userMenu.style.display = loggedIn ? 'flex' : 'none';
     if (loggedIn) {
-      const initial = this.user.displayName ? this.user.displayName.charAt(0) : '?';
+      const initial = this.user.display_name ? this.user.display_name.charAt(0) : '?';
       this.d.userAvatar.textContent = initial;
-      this.d.userAvatar.title = `${this.user.displayName}，点击退出`;
+      this.d.userAvatar.title = `${this.user.display_name}，点击查看主页`;
     }
   }
 
@@ -213,7 +235,7 @@ class App {
       this.user = data.user;
       this.setUserUI(true);
       this.closeAuth();
-      this.showToast(`欢迎回来，${data.user.displayName}！`);
+      this.showToast(`欢迎回来，${data.user.display_name}！`);
       await this.loadPoems();
     } catch (e) {
       this.showToast(e.message === 'unauthorized' ? '用户名或密码错误' : e.message || '登录失败', true);
@@ -238,7 +260,7 @@ class App {
       this.user = data.user;
       this.setUserUI(true);
       this.closeAuth();
-      this.showToast(`欢迎加入墨韵，${data.user.displayName}！`);
+      this.showToast(`欢迎加入墨韵，${data.user.display_name}！`);
     } catch (e) {
       this.showToast(e.message === 'unauthorized' ? '该用户名已被注册' : e.message || '注册失败', true);
     } finally {
@@ -248,7 +270,7 @@ class App {
   }
 
   requireAuth(fn) {
-    if (!this.user) { this.showLogin(); this.showToast('请先登录再发表', true); return; }
+    if (!this.user) { this.showLogin(); this.showToast('请先登录再操作', true); return; }
     fn();
   }
 }
@@ -260,7 +282,7 @@ function logout() {
   window.app.showToast('已退出登录');
 }
 
-/* ===== DATA FETCHING ===== */
+/* ===== DATA ===== */
 App.prototype.fetchAll = async function() {
   try {
     const [poemsRes, statsRes, tagsRes] = await Promise.all([
@@ -288,11 +310,8 @@ App.prototype.loadPoems = async function() {
   } catch (e) { console.error(e); }
 };
 
-/* ===== RENDERING ===== */
-App.prototype.render = function() {
-  this.renderPoems();
-  this.renderStats();
-};
+/* ===== RENDER ===== */
+App.prototype.render = function() { this.renderPoems(); this.renderStats(); };
 
 App.prototype.updateStats = function() {
   if (!this.stats) return;
@@ -353,7 +372,7 @@ App.prototype.renderPoems = function() {
 App.prototype.poemCardHTML = function(p, i) {
   const excerpt = p.content.replace(/\n/g, ' ').substring(0, 100) + (p.content.length > 100 ? '…' : '');
   const authorInit = p.author ? p.author.charAt(0) : '?';
-  const isOwner = this.user && p.userId === this.user.id;
+  const isOwner = this.user && p.user_id === this.user.id;
   return `
     <article class="poem-card" data-id="${p.id}" style="animation-delay:${i*0.05}s">
       <div class="poem-card-head">
@@ -365,7 +384,7 @@ App.prototype.poemCardHTML = function(p, i) {
         <div class="poem-meta">
           <div class="poem-author">${esc(authorInit)}</div>
           <span>${esc(p.author || '佚名')}</span>
-          <span>·</span><span>${timeAgo(p.createdAt)}</span>
+          <span>·</span><span>${timeAgo(new Date(p.created_at).getTime())}</span>
           ${isOwner ? '<span class="owner-badge">我的</span>' : ''}
         </div>
         <div class="poem-stats">
@@ -384,13 +403,11 @@ App.prototype.openWriter = function(poem = null) {
   if (poem) {
     this.d.fTitle.value = poem.title;
     this.d.fCategory.value = poem.category || '随笔';
-    this.d.fCollection.value = poem.collection || '';
-    this.d.fTags.value = (poem.tags || []).join(', ');
+    this.d.fTags.value = Array.isArray(poem.tags) ? poem.tags.join(', ') : '';
     this.d.fContent.value = poem.content;
   } else {
     this.d.fTitle.value = '';
     this.d.fCategory.value = '随笔';
-    this.d.fCollection.value = '';
     this.d.fTags.value = '';
     this.d.fContent.value = '';
   }
@@ -412,7 +429,6 @@ App.prototype.handleSubmit = async function() {
   const data = {
     title, content,
     category: this.d.fCategory.value,
-    collection: this.d.fCollection.value.trim(),
     tags: this.d.fTags.value.split(',').map(t => t.trim()).filter(Boolean),
   };
   try {
@@ -436,35 +452,33 @@ App.prototype.openReader = async function(id) {
   if (!p) {
     try { p = await api(`/api/poems/${id}`); } catch { return; }
   }
+
   api(`/api/poems/${id}/view`, { method: 'POST' }).catch(() => {});
   this.currentPoem = p;
+  this.commentReplies[id] = {};
 
-  const isOwner = this.user && p.userId === this.user.id;
+  const isOwner = this.user && p.user_id === this.user.id;
   const typeLabel = p.category || '随笔';
-  const date = formatDate(p.createdAt);
+  const date = formatDate(new Date(p.created_at).getTime());
   const authorInit = p.author ? p.author.charAt(0) : '?';
 
   this.d.readBody.innerHTML = `
     <span class="read-tag">${esc(typeLabel)}</span>
-    ${p.collection ? `<span class="read-tag" style="margin-left:8px">${esc(p.collection)}</span>` : ''}
     <h1 class="read-title">${esc(p.title)}</h1>
     <div class="read-meta">
-      <div class="poem-author">${esc(authorInit)}</div>
+      <div class="poem-author" style="cursor:pointer" onclick="window.app.goToProfile('${esc(p.username || p.author)}')">${esc(authorInit)}</div>
       <span>${esc(p.author || '佚名')}</span>
       <span>·</span><span>${date}</span>
       <span>·</span><span>♥ ${p.likes||0}</span>
       <span>·</span><span>👁 ${p.views||0}</span>
     </div>
     <div class="read-content">${esc(p.content)}</div>
-    ${(p.tags&&p.tags.length) ? `<div class="read-tags">${p.tags.map(t=>`<span class="tag-item">${esc(t)}</span>`).join('')}</div>` : ''}
+    ${(p.tags&&p.tags.length) ? `<div class="read-tags">${Array.isArray(p.tags) ? p.tags.map(t=>`<span class="tag-item">${esc(t)}</span>`).join('') : ''}</div>` : ''}
   `;
 
   this.d.likeCount.textContent = p.likes || 0;
   this.d.readFooter.innerHTML = `
-    <button class="btn-like" id="likeBtn">
-      <span class="like-heart">♥</span>
-      <span id="likeCount">${p.likes||0}</span>
-    </button>
+    <button class="btn-like" id="likeBtn"><span class="like-heart">♥</span><span id="likeCount">${p.likes||0}</span></button>
     ${isOwner ? `
       <button class="btn-action" id="editBtn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
@@ -477,11 +491,16 @@ App.prototype.openReader = async function(id) {
     ` : ''}
   `;
 
-  this.d.readFooter.querySelector('#likeBtn').addEventListener('click', () => this.handleLike());
-  const editBtn = this.d.readFooter.querySelector('#editBtn');
-  const deleteBtn = this.d.readFooter.querySelector('#deleteBtn');
-  if (editBtn) editBtn.addEventListener('click', () => { this.closeReader(); this.openWriter(this.currentPoem); });
-  if (deleteBtn) deleteBtn.addEventListener('click', () => this.handleDelete());
+  this.d.likeBtn = this.d.readFooter.querySelector('#likeBtn');
+  this.d.editBtn = this.d.readFooter.querySelector('#editBtn');
+  this.d.deleteBtn = this.d.readFooter.querySelector('#deleteBtn');
+  this.d.likeBtn.addEventListener('click', () => this.handleLike());
+  if (this.d.editBtn) this.d.editBtn.addEventListener('click', () => { this.closeReader(); this.openWriter(this.currentPoem); });
+  if (this.d.deleteBtn) this.d.deleteBtn.addEventListener('click', () => this.handleDelete());
+
+  // Load comments
+  this.d.commentsList.innerHTML = '<div class="comment-loading">加载中…</div>';
+  this.loadComments(p.id);
 
   this.d.readModal.classList.add('active');
   document.body.style.overflow = 'hidden';
@@ -492,6 +511,238 @@ App.prototype.closeReader = function() {
   document.body.style.overflow = '';
 };
 
+App.prototype.goToProfile = async function(username) {
+  this.closeReader();
+  this.openProfile(username);
+};
+
+App.prototype.openProfile = async function(username) {
+  try {
+    const data = await api(`/api/users/${username}`);
+    this.userProfile = data;
+    const isSelf = this.user && data.username === this.user.username;
+
+    this.d.profileBody.innerHTML = `
+      <div class="profile-header">
+        <div class="profile-avatar">${data.display_name ? data.display_name.charAt(0) : '?'}</div>
+        <div class="profile-info">
+          <h2 class="profile-name">${esc(data.display_name)}</h2>
+          <p class="profile-username">@${esc(data.username)}</p>
+          ${data.bio ? `<p class="profile-bio">${esc(data.bio)}</p>` : ''}
+          <p class="profile-joined">加入于 ${formatDate(new Date(data.created_at).getTime())}</p>
+        </div>
+        ${isSelf ? `<button class="btn-profile-edit" id="profileEditBtn">编辑资料</button>` : ''}
+      </div>
+      <div class="profile-stats">
+        <div class="ps-item"><span class="ps-num">${data.poem_count || 0}</span><span class="ps-lbl">首诗</span></div>
+        <div class="ps-divider"></div>
+        <div class="ps-item"><span class="ps-num">${data.collection_count || 0}</span><span class="ps-lbl">个集</span></div>
+      </div>
+      <h3 class="profile-section-title">作品</h3>
+      <div class="profile-poems" id="profilePoems">
+        ${(data.poems || []).map(p => `
+          <div class="profile-poem-card" data-id="${p.id}">
+            <div class="pp-title">${esc(p.title)}</div>
+            <div class="pp-excerpt">${esc(p.content.replace(/\n/g,' ').substring(0,60))}…</div>
+            <div class="pp-meta"><span>♥ ${p.likes||0}</span><span>👁 ${p.views||0}</span><span>${timeAgo(new Date(p.created_at).getTime())}</span></div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    this.d.profileBody.querySelectorAll('.profile-poem-card').forEach(card => {
+      card.addEventListener('click', () => { this.closeProfile(); this.openReader(+card.dataset.id); });
+    });
+
+    if (isSelf && this.d.profileEditBtn) {
+      this.d.profileEditBtn.addEventListener('click', () => this.editProfile());
+    }
+
+    this.d.profileModal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  } catch (e) {
+    this.showToast(e.message || '加载失败', true);
+  }
+};
+
+App.prototype.closeProfile = function() {
+  this.d.profileModal.classList.remove('active');
+  document.body.style.overflow = '';
+};
+
+App.prototype.editProfile = async function() {
+  const bio = prompt('编辑个人简介（最多200字）：', this.userProfile?.bio || '');
+  if (bio === null) return;
+  try {
+    await api('/api/auth/profile', { method: 'PUT', body: JSON.stringify({ bio: bio.slice(0, 200) }) });
+    this.user.bio = bio;
+    this.showToast('资料已更新');
+    await this.openProfile(this.user.username);
+  } catch (e) {
+    this.showToast(e.message || '更新失败', true);
+  }
+};
+
+/* ===== COMMENTS ===== */
+App.prototype.loadComments = async function(poemId) {
+  try {
+    const comments = await api(`/api/poems/${poemId}/comments`);
+    this.currentComments = comments || [];
+    this.d.commentsCount.textContent = `${this.currentComments.length} 条评论`;
+    this.renderComments();
+  } catch { this.d.commentsList.innerHTML = ''; }
+};
+
+App.prototype.renderComments = function() {
+  if (!this.currentComments || this.currentComments.length === 0) {
+    this.d.commentsList.innerHTML = '<p class="no-comments">暂无评论，来发表第一条评论吧</p>';
+    return;
+  }
+  this.d.commentsList.innerHTML = this.currentComments.map(c => this.commentHTML(c)).join('');
+  this.d.commentsList.querySelectorAll('.reply-toggle').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      this.toggleReplies(c.id);
+    });
+  });
+  this.d.commentsList.querySelectorAll('.reply-submit').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const input = btn.closest('.reply-form').querySelector('.reply-input');
+      this.submitReply(c.id, input.value.trim(), input);
+    });
+  });
+};
+
+App.prototype.commentHTML = function(c) {
+  const initial = c.display_name ? c.display_name.charAt(0) : '?';
+  const replyCount = this.commentReplies[c.id]?.length || 0;
+  const repliesHTML = (this.commentReplies[c.id] || []).map(r => this.replyHTML(r)).join('');
+  return `
+    <div class="comment-item" data-id="${c.id}">
+      <div class="comment-top">
+        <div class="comment-author" onclick="window.app.goToProfile('${esc(c.username)}')" style="cursor:pointer">
+          <div class="comment-avatar">${esc(initial)}</div>
+          <span class="comment-name">${esc(c.display_name)}</span>
+        </div>
+        <span class="comment-time">${timeAgo(new Date(c.created_at).getTime())}</span>
+      </div>
+      <p class="comment-content">${esc(c.content)}</p>
+      <div class="comment-actions">
+        <button class="comment-action reply-toggle" data-parent="${c.id}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 14 4 9 9 4"/></svg>
+          回复${replyCount > 0 ? `(${replyCount})` : ''}
+        </button>
+        ${this.user && c.user_id === this.user.id ? `<button class="comment-action comment-delete" data-id="${c.id}">删除</button>` : ''}
+      </div>
+      <div class="comment-replies" id="replies-${c.id}" style="display:none">${repliesHTML}</div>
+    </div>`;
+};
+
+App.prototype.replyHTML = function(r) {
+  const initial = r.display_name ? r.display_name.charAt(0) : '?';
+  return `
+    <div class="reply-item">
+      <div class="reply-top">
+        <span class="reply-author" onclick="window.app.goToProfile('${esc(r.username)}')" style="cursor:pointer">${esc(r.display_name)}</span>
+        <span class="reply-time">${timeAgo(new Date(r.created_at).getTime())}</span>
+      </div>
+      <p class="reply-content">${esc(r.content)}</p>
+      ${this.user && r.user_id === this.user.id ? `<button class="reply-delete" data-id="${r.id}">删除</button>` : ''}
+    </div>`;
+};
+
+App.prototype.toggleReplies = async function(parentId) {
+  const el = document.getElementById(`replies-${parentId}`);
+  if (!el) return;
+  if (el.style.display === 'none') {
+    if (!this.commentReplies[parentId]) {
+      try { this.commentReplies[parentId] = await api(`/api/comments/${parentId}/replies`); } catch { this.commentReplies[parentId] = []; }
+    }
+    el.innerHTML = this.commentReplies[parentId].map(r => this.replyHTML(r)).join('') + this.replyInputHTML(parentId);
+    el.style.display = '';
+    el.querySelectorAll('.reply-delete').forEach(btn => {
+      btn.addEventListener('click', () => this.deleteReply(parentId, +btn.dataset.id));
+    });
+  } else {
+    el.style.display = 'none';
+  }
+};
+
+App.prototype.replyInputHTML = function(parentId) {
+  return `
+    <div class="reply-form">
+      <input class="reply-input" placeholder="回复…" maxlength="200">
+      <button class="reply-submit" data-parent="${parentId}">发送</button>
+    </div>`;
+};
+
+App.prototype.submitComment = async function() {
+  const content = this.d.commentInput.value.trim();
+  if (!content) return;
+  if (!this.user) { this.closeReader(); this.showLogin(); return; }
+  if (!this.currentPoem) return;
+  this.d.commentInput.disabled = true;
+  this.d.commentSend.disabled = true;
+  try {
+    await api(`/api/poems/${this.currentPoem.id}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ content })
+    });
+    this.d.commentInput.value = '';
+    await this.loadComments(this.currentPoem.id);
+    this.showToast('评论成功');
+  } catch (e) {
+    this.showToast(e.message || '评论失败', true);
+  } finally {
+    this.d.commentInput.disabled = false;
+    this.d.commentSend.disabled = false;
+    this.d.commentInput.focus();
+  }
+};
+
+App.prototype.submitReply = async function(parentId, content, inputEl) {
+  if (!content) return;
+  if (!this.user) { this.closeReader(); this.showLogin(); return; }
+  try {
+    await api(`/api/poems/${this.currentPoem.id}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ content, parent_id: parentId })
+    });
+    delete this.commentReplies[parentId];
+    await this.toggleReplies(parentId);
+    // Re-open replies to show new one
+    setTimeout(() => {
+      const el = document.getElementById(`replies-${parentId}`);
+      if (el) el.click && el.style.display !== 'none' && this.toggleReplies(parentId);
+    }, 50);
+    this.showToast('回复成功');
+  } catch (e) {
+    this.showToast(e.message || '回复失败', true);
+  }
+};
+
+App.prototype.deleteComment = async function(commentId) {
+  const ok = await this.showConfirm('确定要删除这条评论吗？');
+  if (!ok) return;
+  try {
+    await api(`/api/comments/${commentId}`, { method: 'DELETE' });
+    await this.loadComments(this.currentPoem.id);
+    this.showToast('已删除');
+  } catch (e) { this.showToast(e.message || '删除失败', true); }
+};
+
+App.prototype.deleteReply = async function(parentId, replyId) {
+  try {
+    await api(`/api/comments/${replyId}`, { method: 'DELETE' });
+    if (this.commentReplies[parentId]) {
+      this.commentReplies[parentId] = this.commentReplies[parentId].filter(r => r.id !== replyId);
+      this.renderComments();
+    }
+  } catch (e) { this.showToast(e.message || '删除失败', true); }
+};
+
+/* ===== ACTIONS ===== */
 App.prototype.handleLike = async function() {
   if (!this.user) { this.closeReader(); this.showLogin(); this.showToast('请先登录再点赞', true); return; }
   if (!this.currentPoem) return;

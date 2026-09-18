@@ -19,9 +19,9 @@
         <span class="brand-name">墨韵</span>
       </a>
       <nav class="nav-links">
-        <a href="#home" class="nav-link active">首页</a>
-        <a href="#poems" class="nav-link">诗集</a>
-        <a href="#about" class="nav-link">关于</a>
+        <a href="#home" class="nav-link active" data-section="home">首页</a>
+        <a href="#poems" class="nav-link" data-section="poems">诗集</a>
+        <a href="#about" class="nav-link" data-section="about">关于</a>
       </nav>
       <div class="nav-actions" id="navActions">
         <button class="icon-btn" id="themeBtn" aria-label="切换主题">
@@ -34,7 +34,7 @@
         </div>
         <div class="user-menu" id="userMenu" style="display:none">
           <button class="btn-write" id="writeBtn"><span>写</span></button>
-          <div class="user-avatar" id="userAvatar" title="点击退出"></div>
+          <div class="user-avatar" id="userAvatar" title="我的主页"></div>
         </div>
       </div>
     </div>
@@ -205,13 +205,9 @@
             </select>
           </div>
           <div class="field">
-            <label>集名 <span class="hint">可选</span></label>
-            <input type="text" id="fCollection" placeholder="如：春之声">
+            <label>标签 <span class="hint">逗号分隔</span></label>
+            <input type="text" id="fTags" placeholder="如：春天, 风景, 感悟">
           </div>
-        </div>
-        <div class="field">
-          <label>标签 <span class="hint">逗号分隔</span></label>
-          <input type="text" id="fTags" placeholder="如：春天, 风景, 感悟">
         </div>
         <div class="field field--main">
           <label>正文</label>
@@ -225,12 +221,23 @@
     </div>
   </div>
 
-  <!-- READ MODAL -->
+  <!-- READ MODAL (with comments) -->
   <div class="modal" id="readModal">
     <div class="modal-backdrop" id="readBackdrop"></div>
-    <div class="modal-panel read-panel">
+    <div class="modal-panel read-panel read-panel--large">
       <button class="icon-btn modal-close" id="readClose">&times;</button>
       <div class="read-scroll" id="readBody"></div>
+      <!-- Comments section -->
+      <div class="comments-section" id="commentsSection">
+        <div class="comments-header">
+          <span class="comments-count" id="commentsCount">0 条评论</span>
+        </div>
+        <div class="comment-input-wrap" id="commentInputWrap">
+          <textarea class="comment-input" id="commentInput" placeholder="写下你的感悟..." rows="2"></textarea>
+          <button class="btn-comment-send" id="commentSend">发送</button>
+        </div>
+        <div class="comments-list" id="commentsList"></div>
+      </div>
       <div class="read-footer" id="readFooter"></div>
     </div>
   </div>
@@ -247,6 +254,15 @@
         <button class="btn-confirm-cancel" id="confirmCancel">取消</button>
         <button class="btn-confirm-ok" id="confirmOk">确定</button>
       </div>
+    </div>
+  </div>
+
+  <!-- USER PROFILE MODAL -->
+  <div class="modal" id="profileModal">
+    <div class="modal-backdrop" id="profileBackdrop"></div>
+    <div class="modal-panel profile-panel">
+      <button class="icon-btn modal-close" id="profileClose">&times;</button>
+      <div class="profile-scroll" id="profileBody"></div>
     </div>
   </div>
 
